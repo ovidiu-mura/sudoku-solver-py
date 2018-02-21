@@ -12,6 +12,7 @@
 import sys
 
 from backtrack import State, backtrack
+import support
 
 class Sudoku(State):
 
@@ -79,31 +80,13 @@ class Sudoku(State):
     def print(self):
         if self.ntries > 0:
             print("ntries:", self.ntries)
-        for r in range(9):
-            s = ""
-            for c in range(9):
-                if (r, c) in self.puzzle:
-                    s += str(self.puzzle[(r, c)])
-                else:
-                    s += '.'
-            print(''.join(s))
+        support.print_puzzle(self.puzzle)
 
     def process_solution(self, a):
         self.print()
         self.finished = True
 
-def read_sudoku(filename):
-    puzzle = dict()
-    row = 0
-    with open(filename, "r") as f:
-        for line in f:
-            for col in range(len(line) - 1):
-                if line[col] != '.':
-                    puzzle[(row, col)] = int(line[col])
-            row += 1
-    return Sudoku(puzzle)
-
-sudoku = read_sudoku(sys.argv[1])
+sudoku = Sudoku(support.read_puzzle(sys.argv[1]))
 sudoku.print()
 print()
 backtrack(sudoku, [])

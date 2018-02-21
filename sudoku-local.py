@@ -12,6 +12,8 @@
 import random
 import sys
 
+import support
+
 p_noise = 0.5
 
 def hist(values):
@@ -33,16 +35,6 @@ def defect_count(values):
         if n != 1:
             return 1
     return 0
-
-def print_puzzle(puzzle):
-    for r in range(9):
-        s = ""
-        for c in range(9):
-            if (r, c) in puzzle:
-                s += str(puzzle[(r, c)])
-            else:
-                s += '.'
-        print(''.join(s))
 
 class Sudoku(object):
 
@@ -129,20 +121,10 @@ class Sudoku(object):
         print_puzzle(self.best)
 
     def print(self):
-        print_puzzle(self.puzzle)
+        support.print_puzzle(self.puzzle)
 
-def read_sudoku(filename):
-    puzzle = dict()
-    row = 0
-    with open(filename, "r") as f:
-        for line in f:
-            for col in range(len(line) - 1):
-                if line[col] != '.':
-                    puzzle[(row, col)] = int(line[col])
-            row += 1
-    return Sudoku(puzzle)
 
-sudoku = read_sudoku(sys.argv[1])
+sudoku = Sudoku(support.read_puzzle(sys.argv[1]))
 sudoku.print()
 print()
 sudoku.search()
