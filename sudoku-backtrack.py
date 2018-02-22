@@ -12,14 +12,12 @@
 import sys
 
 from backtrack import State, backtrack
-import support
+from puzzle import Puzzle
 
-class Sudoku(State):
+class Sudoku(State, Puzzle):
 
-    def __init__(self, puzzle):
-        self.puzzle = puzzle
-        cells = {(i, j) for i in range(9) for j in range(9)}
-        self.free = cells - set(puzzle.keys())
+    def __init__(self, filename):
+        Puzzle.__init__(self, filename)
         self.ntries = 0
 
     def is_legal(self, cell, v):
@@ -65,8 +63,6 @@ class Sudoku(State):
         cell, v = a[-1]
         self.puzzle[cell] = v
         self.free.remove(cell)
-        # self.print()
-        # print()
 
     def unmake_move(self, a):
         cell, v = a[-1]
@@ -80,13 +76,13 @@ class Sudoku(State):
     def print(self):
         if self.ntries > 0:
             print("ntries:", self.ntries)
-        support.print_puzzle(self.puzzle)
+        print(self.__str__())
 
     def process_solution(self, a):
         self.print()
         self.finished = True
 
-sudoku = Sudoku(support.read_puzzle(sys.argv[1]))
-sudoku.print()
+sudoku = Sudoku(sys.argv[1])
+print(sudoku)
 print()
 backtrack(sudoku, [])

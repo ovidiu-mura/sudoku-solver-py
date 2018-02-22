@@ -9,10 +9,11 @@
 # Derived from Skiena, Algorithm Design Handbook (2nd ed),
 # pp. 231-
 
+import copy
 import random
 import sys
 
-import support
+from puzzle import Puzzle
 
 p_noise = 0.5
 
@@ -36,12 +37,10 @@ def defect_count(values):
             return 1
     return 0
 
-class Sudoku(object):
+class Sudoku(Puzzle):
 
-    def __init__(self, puzzle):
-        self.puzzle = puzzle
-        self.cells = {(i, j) for i in range(9) for j in range(9)}
-        self.free = self.cells - set(puzzle.keys())
+    def __init__(self, filename):
+        super(Sudoku, self).__init__(filename)
         self.bestv = None
 
     def restart(self):
@@ -85,7 +84,7 @@ class Sudoku(object):
         print("violations:", nv0)
         if self.bestv == None or nv0 < self.bestv:
             self.bestv = nv0
-            self.best = dict(self.puzzle)
+            self.best = copy.deepcopy(self)
         nvs = []
         for cell1 in self.free:
             for cell2 in self.free:
@@ -114,17 +113,13 @@ class Sudoku(object):
             for _ in range(500):
                 if self.local_move(defect_degree):
                     print("solution found")
-                    self.print()
+                    print(self)
                     return
         assert self.bestv
         print("no solution found: violations =", self.bestv)
-        print_puzzle(self.best)
+        print(self.best)
 
-    def print(self):
-        support.print_puzzle(self.puzzle)
-
-
-sudoku = Sudoku(support.read_puzzle(sys.argv[1]))
-sudoku.print()
+sudoku = Sudoku(sys.argv[1])
+print(sudoku)
 print()
 sudoku.search()
