@@ -17,93 +17,60 @@ from puzzle import Puzzle
 
 p_noise = 0.5
 
-def hist(values):
-    h = [0] * 9
-    for v in values:
-        h[v - 1] += 1
-    return h
-
-def defect_degree(values):
-    nd = 0
-    h = hist(values)
-    for n in h:
-        nd += max(n - 1, 0)
-    return nd
-
-def defect_count(values):
-    h = hist(values)
-    for n in h:
-        if n != 1:
-            return 1
-    return 0
-
 class Sudoku(Puzzle):
 
     def __init__(self, filename):
         super(Sudoku, self).__init__(filename)
+        self.init_free = self.free
         self.bestv = None
 
     def restart(self):
-        for cell in self.free:
+        for cell in self.init_free:
             if cell in self.puzzle:
-                del self.puzzle[cell]
-        start_vs = [self.puzzle[cell] for cell in self.puzzle]
-        h = hist(start_vs)
+                self.remove(cell)
+        hist = [9] * 9
+        for cell in self.puzzle:
+            hist[self.puzzle[cell] - 1] -= 1
         missing = []
-        for v in range(9):
-            missing += [v + 1] * (9 - h[v])
+        for v in range(len(hist)):
+            missing += [v + 1] * hist[v]
         random.shuffle(missing)
-        for cell in self.free:
-            self.puzzle[cell] = missing.pop()
-
-    def swap(self, cell1, cell2):
-        self.puzzle[cell1], self.puzzle[cell2] = \
-            self.puzzle[cell2], self.puzzle[cell1]
-
-    def violations(self, defect):
-        nd = 0
-        for c in range(9):
-            values = [self.puzzle[(r, c)] for r in range(9)]
-            nd += defect(values)
-        for r in range(9):
-            values = [self.puzzle[(r, c)] for c in range(9)]
-            nd += defect(values)
-        for rbox in range(3):
-            for cbox in range(3):
-                values = []
-                for r in range(rbox * 3, (rbox + 1) * 3):
-                    for c in range(cbox * 3, (cbox + 1) * 3):
-                        values.append(self.puzzle[(r, c)])
-                nd += defect(values)
-        return nd
+        for cell in self.init_free:
+            self.add(cell, missing.pop())
+        self.nviolations = self.defect_degree()
 
     def local_move(self, defect):
-        nv0 = self.violations(defect)
-        if nv0 == 0:
+        if self.nviolations == 0:
             return True
-        print("violations:", nv0)
+        print("violations:", self.nviolations)
         if self.bestv == None or nv0 < self.bestv:
-            self.bestv = nv0
+            self.bestv = self.nviolations
             self.best = copy.deepcopy(self)
         nvs = []
         for cell1 in self.free:
             for cell2 in self.free:
                 if cell2 < cell1:
                     continue
+                nv = self.nviolations
+                nv -= self.defect_degree_cell(cell1)
+                nv -= self.defect_degree_cell(cell2)
                 self.swap(cell1, cell2)
-                nv = self.violations(defect)
-                nvs.append((nv, (cell1, cell2)))
+                nv += self.defect_degree_cell(cell1)
+                nv += self.defect_degree_cell(cell2)
+                nvs.append((nv - self.nviolations, (cell1, cell2)))
                 self.swap(cell1, cell2)
         nvs.sort()
-        bestv, _ = nvs[0]
         if random.random() <= p_noise:
-            _, move = random.choice(nvs)
+            dv, move = random.choice(nvs)
             cell1, cell2 = move
             self.swap(cell1, cell2)
+            self.nviolations += dv
             return False
-        best_moves = [move for v, move in nvs if v == bestv]
+        bestdv, _ = nvs[0]
+        best_moves = [move for _, move in nvs if dv == bestdv]
         cell1, cell2 = random.choice(best_moves)
         self.swap(cell1, cell2)
+        self.nviolations += bestdv
         return False
 
     def search(self):
@@ -118,6 +85,7 @@ class Sudoku(Puzzle):
         assert self.bestv
         print("no solution found: violations =", self.bestv)
         print(self.best)
+
 
 sudoku = Sudoku(sys.argv[1])
 print(sudoku)
