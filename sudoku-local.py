@@ -10,12 +10,13 @@
 # pp. 231-
 
 import copy
+import math
 import random
 import sys
 
 from puzzle import Puzzle
 
-p_noise = 0.5
+p_noise = 0.2
 
 class Sudoku(Puzzle):
 
@@ -40,10 +41,12 @@ class Sudoku(Puzzle):
         self.nviolations = self.defect_degree()
 
     def local_move(self, defect):
-        print("violations:", self.nviolations)
         if self.bestv == None or self.nviolations < self.bestv:
+            print("bestv:", self.nviolations)
             self.bestv = self.nviolations
             self.best = copy.deepcopy(self)
+        else:
+            print("nv:", self.nviolations)
         if self.nviolations == 0:
             return True
         nvs = []
@@ -51,26 +54,29 @@ class Sudoku(Puzzle):
             for cell2 in self.init_free:
                 if cell2 <= cell1:
                     continue
+                if self.puzzle[cell1] == self.puzzle[cell2]:
+                    continue
                 nv = self.nviolations
                 nv -= self.cell_defect_degree(cell1)
                 nv -= self.cell_defect_degree(cell2)
                 self.swap(cell1, cell2)
                 nv += self.cell_defect_degree(cell1)
                 nv += self.cell_defect_degree(cell2)
-                nvs.append((nv - self.nviolations, (cell1, cell2)))
+                nvs.append((nv, (cell1, cell2)))
                 self.swap(cell1, cell2)
         nvs.sort()
-        if random.random() <= p_noise:
-            dv, move = random.choice(nvs)
+        bestnv, _ = nvs[0]
+        if bestnv > 0 and random.random() <= p_noise:
+            weights = [1.0 / math.sqrt(dv) for dv, _ in nvs]
+            [(nv, move)] = random.choices(nvs, weights=weights)
             cell1, cell2 = move
-            self.swap(cell1, cell2)
-            self.nviolations += dv
-            return False
-        bestdv, _ = nvs[0]
-        best_moves = [move for dv, move in nvs if dv == bestdv]
-        cell1, cell2 = random.choice(best_moves)
+            thisnv = nv
+        else:
+            best_moves = [move for nv, move in nvs if nv == bestnv]
+            cell1, cell2 = random.choice(best_moves)
+            thisnv = bestnv
         self.swap(cell1, cell2)
-        self.nviolations += bestdv
+        self.nviolations = thisnv
         return False
 
     def search(self):
