@@ -69,7 +69,7 @@ class Puzzle(object):
             self.cols[c] = Cache(self, cells)
         self.rows = dict()
         for r in range(9):
-            values = {(r, c) for c in range(9)}
+            cells = {(r, c) for c in range(9)}
             self.rows[r] = Cache(self, cells)
         self.boxes = dict()
         for rbox in range(3):
@@ -95,12 +95,12 @@ class Puzzle(object):
     def add(self, cell, v):
         assert cell not in self.puzzle
         assert cell in self.free
-        self.free.remove(cell)
         r, c = cell
         self.cols[c].add(cell, v)
         self.rows[r].add(cell, v)
         self.boxes[(r // 3, c // 3)].add(cell, v)
         self.puzzle[cell] = v
+        self.free.remove(cell)
 
     def swap(self, cell1, cell2):
         assert cell1 != cell2
