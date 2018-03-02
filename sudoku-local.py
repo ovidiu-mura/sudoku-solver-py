@@ -16,14 +16,15 @@ import sys
 
 from puzzle import Puzzle
 
-p_noise = 0.2
-
 class Sudoku(Puzzle):
 
-    def __init__(self, filename):
+    def __init__(self, filename, restarts, steps, pnoise):
         super(Sudoku, self).__init__(filename)
         self.init_free = set(self.free)
         self.bestv = None
+        self.restarts = restarts
+        self.steps = steps
+        self.pnoise = pnoise
 
     def restart(self):
         for cell in self.init_free:
@@ -49,7 +50,7 @@ class Sudoku(Puzzle):
             print("nv:", self.nviolations)
         if self.nviolations == 0:
             return True
-        nvs = []
+        neighbors = []
         for cell1 in self.init_free:
             for cell2 in self.init_free:
                 if cell2 <= cell1:
@@ -62,28 +63,28 @@ class Sudoku(Puzzle):
                 self.swap(cell1, cell2)
                 nv += self.cell_defect_degree(cell1)
                 nv += self.cell_defect_degree(cell2)
-                nvs.append((nv, (cell1, cell2)))
+                neighbors.append((nv, (cell1, cell2)))
                 self.swap(cell1, cell2)
-        nvs.sort()
-        bestnv, _ = nvs[0]
-        if bestnv > 0 and random.random() <= p_noise:
-            weights = [1.0 / math.sqrt(dv) for dv, _ in nvs]
-            [(nv, move)] = random.choices(nvs, weights=weights)
+        neighbors.sort()
+        bestnv, _ = neighbors[0]
+        if bestnv > 0 and random.random() <= self.pnoise:
+            weights = [1.0 / math.sqrt(dv) for dv, _ in neighbors]
+            [(nv, move)] = random.choices(neighbors, weights=weights)
             cell1, cell2 = move
-            thisnv = nv
+            nviolations = nv
         else:
-            best_moves = [move for nv, move in nvs if nv == bestnv]
+            best_moves = [move for nv, move in neighbors if nv == bestnv]
             cell1, cell2 = random.choice(best_moves)
-            thisnv = bestnv
+            nviolations = bestnv
         self.swap(cell1, cell2)
-        self.nviolations = thisnv
+        self.nviolations = nviolations
         return False
 
     def search(self):
-        for _ in range(5):
+        for _ in range(self.restarts):
             print("restart")
             self.restart()
-            for _ in range(500):
+            for _ in range(self.steps):
                 if self.local_move(self.defect_degree):
                     print("solution found")
                     print(self)
@@ -92,7 +93,7 @@ class Sudoku(Puzzle):
         print("no solution found: violations =", self.bestv)
         print(self.best)
 
-sudoku = Sudoku(sys.argv[1])
+sudoku = Sudoku(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4]))
 print(sudoku)
 print()
 sudoku.search()
